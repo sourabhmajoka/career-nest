@@ -1,4 +1,3 @@
-// src/app/id-verification/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -8,248 +7,110 @@ import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 
-// --- Types for dropdowns ---
-type College = { id: number | string; name: string }
-type Department = { id: number | string; name: string }
+// ... (Your College/Department types) ...
 
-// --- 1. Student Verification Form ---
-const StudentVerificationForm = ({ user }: { user: User }) => {
-  const [officialEmail, setOfficialEmail] = useState('')
-  const [collegeId, setCollegeId] = useState<number | string>('')
-  const [departmentId, setDepartmentId] = useState<number | string>('')
-  const [graduationYear, setGraduationYear] = useState('')
-  
-  const [colleges, setColleges] = useState<College[]>([])
-  const [departments, setDepartments] = useState<Department[]>([])
-  
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-
-  // Fetch colleges and departments
-  useEffect(() => {
-    const fetchDropdownData = async () => {
-      const { data: collegesData } = await supabase.from('colleges').select('id, name')
-      if (collegesData) setColleges(collegesData)
-      
-      const { data: departmentsData } = await supabase.from('departments').select('id, name')
-      if (departmentsData) setDepartments(departmentsData)
-    }
-    fetchDropdownData()
-  }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setMessage(null)
-
-    // A. First, update the profile with the new data
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        college_id: collegeId,
-        department_id: departmentId,
-        graduation_year: graduationYear,
-        official_email: officialEmail,
-      })
-      .eq('id', user.id)
-
-    if (profileError) {
-      setError(profileError.message)
-      setLoading(false)
-      return
-    }
-
-    // B. Now, call the Edge Function to send the email
-    try {
-      const { error: funcError } = await supabase.functions.invoke(
-        'student-verify-email',
-        { body: { official_email: officialEmail, user_id: user.id } }
-      )
-
-      if (funcError) throw funcError
-      
-      setMessage(`Success! We've sent a verification link to ${officialEmail}. Please check your inbox.`)
-    } catch (err: any) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }
-
-  if (message) {
-    return <p className="text-center text-lg text-green-600">{message}</p>
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <p>Hello Student! Please complete your profile to get verified.</p>
-      
-      <div>
-        <label htmlFor="college-id" className="block text-sm font-medium text-gray-700">College</label>
-        <select
-          id="college-id"
-          required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-          value={collegeId}
-          onChange={(e) => setCollegeId(e.target.value)}
-        >
-          <option value="" disabled>Select your college...</option>
-          {colleges.map((college) => (
-            <option key={college.id} value={college.id}>{college.name}</option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="department-id" className="block text-sm font-medium text-gray-700">Department</label>
-        <select
-          id="department-id"
-          required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-          value={departmentId}
-          onChange={(e) => setDepartmentId(e.target.value)}
-        >
-          <option value="" disabled>Select your department...</option>
-          {departments.map((dept) => (
-            <option key={dept.id} value={dept.id}>{dept.name}</option>
-          ))}
-        </select>
-      </div>
-      
-      <div>
-        <label htmlFor="grad-year" className="block text-sm font-medium text-gray-700">Graduation Year</label>
-        <input 
-          id="grad-year"
-          type="number" 
-          placeholder="e.g., 2026" 
-          required 
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400" 
-          value={graduationYear}
-          onChange={(e) => setGraduationYear(e.target.value)} 
-        />
-      </div>
-
-      <div>
-        <label htmlFor="official-email" className="block text-sm font-medium text-gray-700">Official College Email</label>
-        <input 
-          id="official-email"
-          type="email" 
-          placeholder="your_id@dcrustm.org" 
-          required 
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400" 
-          value={officialEmail}
-          onChange={(e) => setOfficialEmail(e.target.value)} 
-        />
-      </div>
-      
-      <button type="submit" disabled={loading} className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
-        {loading ? 'Sending...' : 'Send Verification Email'}
-      </button>
-      {error && <p className="text-center text-sm text-red-600">{error}</p>}
-    </form>
-  )
-}
-
-// --- 2. Faculty & Alumni Verification Form ---
-const FacultyAlumniForm = ({ user, role }: { user: User, role: 'Faculty' | 'Alumni' }) => {
-  const [officialEmail, setOfficialEmail] = useState('')
-  const [collegeId, setCollegeId] = useState<number | string>('')
+// Form for ALL users (Student, Faculty, Alumni)
+const VerificationForm = ({ user, role }: { user: User, role: string }) => {
+  const [personalEmail, setPersonalEmail] = useState('')
   const [departmentId, setDepartmentId] = useState<number | string>('')
   const [graduationYear, setGraduationYear] = useState('')
   const [idProofFile, setIdProofFile] = useState<File | null>(null)
   
-  const [colleges, setColleges] = useState<College[]>([])
-  const [departments, setDepartments] = useState<Department[]>([])
-
+  const [departments, setDepartments] = useState<any[]>([])
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const router = useRouter()
 
-  // Fetch colleges and departments
+  // Fetch departments
   useEffect(() => {
-    const fetchDropdownData = async () => {
-      const { data: collegesData } = await supabase.from('colleges').select('id, name')
-      if (collegesData) setColleges(collegesData)
-      
-      const { data: departmentsData } = await supabase.from('departments').select('id, name')
-      if (departmentsData) setDepartments(departmentsData)
+    const fetchDepartments = async () => {
+      const { data } = await supabase.from('departments').select('id, name')
+      if (data) setDepartments(data)
     }
-    fetchDropdownData()
+    fetchDepartments()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!idProofFile) {
-      setError('Please upload your ID proof.')
-      return
-    }
     setLoading(true)
     setError(null)
-    setMessage(null)
+    
+    // For Faculty/Alumni, ID proof is required
+    if ((role === 'Faculty' || role === 'Alumni') && !idProofFile) {
+      setError('Please upload your ID proof.')
+      setLoading(false)
+      return
+    }
 
     try {
-      // 1. Upload the ID proof file
-      const fileExt = idProofFile.name.split('.').pop()
-      const filePath = `${user.id}/id_proof.${fileExt}` 
+      let id_proof_url: string | null = null
+      
+      // 1. Upload ID proof if needed
+      if (idProofFile) {
+        const fileExt = idProofFile.name.split('.').pop()
+        const filePath = `${user.id}/id_proof.${fileExt}`
+        const { data: uploadData, error: storageError } = await supabase.storage
+          .from('id-proofs')
+          .upload(filePath, idProofFile, { upsert: true })
+        if (storageError) throw storageError
+        id_proof_url = uploadData.path
+      }
 
-      const { data: uploadData, error: storageError } = await supabase.storage
-        .from('id-proofs')
-        .upload(filePath, idProofFile, { upsert: true })
-        
-      if (storageError) throw storageError
+      // 2. Prepare data to update profile
+      const updates: any = {
+        department_id: departmentId,
+        email_personal: personalEmail, // New column for personal email
+        status: (role === 'Student') ? 'approved' : 'pending_admin_approval',
+      }
+      
+      if (role !== 'Faculty') {
+        updates.graduation_year = graduationYear
+      }
+      if (id_proof_url) {
+        updates.id_proof_url = id_proof_url
+      }
 
-      // 2. Update the user's profile
+      // 3. Update the profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          college_id: collegeId,
-          department_id: departmentId,
-          graduation_year: role === 'Alumni' ? graduationYear : null,
-          official_email: officialEmail,
-          id_proof_url: uploadData.path, 
-          status: 'pending_admin_approval'
-        })
+        .update(updates)
         .eq('id', user.id)
         
       if (profileError) throw profileError
 
-      setMessage('Your request has been submitted for approval. You will receive an email once it has been reviewed.')
-
+      // 4. Redirect
+      if (updates.status === 'approved') {
+        router.push('/home')
+      } else {
+        router.push('/pending-approval') // We need to create this simple page
+      }
+      
     } catch (err: any) {
       setError(err.message)
     }
     setLoading(false)
   }
 
-  if (message) {
-    return <p className="text-center text-lg text-green-600">{message}</p>
-  }
-  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p>Hello {role}! Please complete your profile to request approval.</p>
-
+      <p>Welcome, {role}! Your official email is verified. Please complete your profile.</p>
+      
       <div>
-        <label htmlFor="college-id" className="block text-sm font-medium text-gray-700">College</label>
-        <select
-          id="college-id"
-          required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-          value={collegeId}
-          onChange={(e) => setCollegeId(e.target.value)}
-        >
-          <option value="" disabled>Select your college...</option>
-          {colleges.map((college) => (
-            <option key={college.id} value={college.id}>{college.name}</option>
-          ))}
-        </select>
+        <label className="block text-sm font-medium text-gray-700">Personal Email</label>
+        <input 
+          type="email" 
+          placeholder="e.g., you@gmail.com" 
+          required 
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400" 
+          value={personalEmail}
+          onChange={(e) => setPersonalEmail(e.target.value)} 
+        />
       </div>
 
       <div>
-        <label htmlFor="department-id" className="block text-sm font-medium text-gray-700">Department</label>
+        <label className="block text-sm font-medium text-gray-700">Department</label>
         <select
-          id="department-id"
           required
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
           value={departmentId}
@@ -262,13 +123,12 @@ const FacultyAlumniForm = ({ user, role }: { user: User, role: 'Faculty' | 'Alum
         </select>
       </div>
       
-      {role === 'Alumni' && (
+      {role !== 'Faculty' && (
         <div>
-          <label htmlFor="grad-year" className="block text-sm font-medium text-gray-700">Graduation Year</label>
+          <label className="block text-sm font-medium text-gray-700">Graduation Year</label>
           <input 
-            id="grad-year"
             type="number" 
-            placeholder="e.g., 2018" 
+            placeholder="e.g., 2026" 
             required 
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400" 
             value={graduationYear}
@@ -277,26 +137,20 @@ const FacultyAlumniForm = ({ user, role }: { user: User, role: 'Faculty' | 'Alum
         </div>
       )}
       
-      <div>
-        <label htmlFor="official-email" className="block text-sm font-medium text-gray-700">Official College Email</label>
-        <input 
-          id="official-email"
-          type="email" 
-          placeholder="your_id@dcrustm.org" 
-          required 
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400" 
-          value={officialEmail}
-          onChange={(e) => setOfficialEmail(e.target.value)} 
-        />
-      </div>
+      {(role === 'Faculty' || role === 'Alumni') && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Upload ID Card (PDF/Image)</label>
+          <input 
+            type="file" 
+            required 
+            className="mt-1 block w-full text-sm text-gray-700 file:..." 
+            onChange={(e) => setIdProofFile(e.target.files ? e.target.files[0] : null)} 
+          />
+        </div>
+      )}
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Upload ID Card (PDF/Image)</label>
-        <input type="file" required className="mt-1 block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-600 hover:file:bg-indigo-100" onChange={(e) => setIdProofFile(e.target.files ? e.target.files[0] : null)} />
-      </div>
-
-      <button type="submit" disabled={loading} className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
-        {loading ? 'Submitting...' : 'Request Approval'}
+      <button type="submit" disabled={loading} className="flex w-full justify-center ...">
+        {loading ? 'Saving...' : 'Complete Profile'}
       </button>
       {error && <p className="text-center text-sm text-red-600">{error}</p>}
     </form>
@@ -326,11 +180,16 @@ export default function IdVerificationPage() {
         .single()
       
       if (profile) {
-        setProfileStatus(profile.status)
         if (profile.status === 'approved') {
           router.push('/home')
           return
         }
+        if (profile.status === 'pending_admin_approval') {
+          router.push('/pending-approval')
+          return
+        }
+        // If status is 'pending_verification', we stay here
+        setProfileStatus(profile.status)
       }
       
       setUser(user)
@@ -342,50 +201,15 @@ export default function IdVerificationPage() {
 
   const renderVerificationForm = () => {
     if (!user) return null
-
-    if (profileStatus === 'pending_admin_approval') {
-      return (
-        <div className="text-center">
-          <p className="text-lg text-gray-700">Your request is pending admin approval.</p>
-          <p className="mt-2 text-sm text-gray-500">You will receive an email once it has been reviewed. You may close this page.</p>
-        </div>
-      )
-    }
-
     const role = user.user_metadata?.role
-    
-    switch (role) {
-      case 'Student':
-        return <StudentVerificationForm user={user} />
-      case 'Faculty':
-        return <FacultyAlumniForm user={user} role="Faculty" />
-      case 'Alumni':
-        return <FacultyAlumniForm user={user} role="Alumni" />
-      default:
-        return <p>Error: User role not found.</p>
-    }
+    return <VerificationForm user={user} role={role} />
   }
 
   return (
-    // --- UPDATED LAYOUT ---
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
-
       {/* --- Left Logo Pane --- */}
       <div className="hidden items-center justify-center bg-gray-50 p-12 md:flex">
-        <div className="flex flex-col items-center text-center">
-          <Link href="/">
-            <Image
-              src="/logo.png"
-              alt="CareerNest Logo"
-              width={728}
-              height={142}
-              className="h-auto w-80"
-            />
-          </Link>
-          <p className="mt-6 text-xl text-gray-600">
-            Just one more step. We need to verify who you are.
-          </p>
-        </div>
+        {/* ... (Your logo and tagline) ... */}
       </div>
       
       {/* --- Right Form Pane --- */}
@@ -394,12 +218,7 @@ export default function IdVerificationPage() {
           <h2 className="mb-6 text-center text-3xl font-bold text-gray-900">
             Complete Your Profile
           </h2>
-          
-          {loading ? (
-            <p className="text-center text-gray-600">Loading your profile...</p>
-          ) : (
-            renderVerificationForm()
-          )}
+          {loading ? <p>Loading...</p> : renderVerificationForm()}
         </div>
       </div>
     </div>

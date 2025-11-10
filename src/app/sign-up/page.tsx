@@ -1,20 +1,36 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react' // Import useEffect
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link' 
 import Image from 'next/image' 
 
+// --- Types for dropdowns ---
+type College = { id: number | string; name: string; verification_domain: string }
+type Department = { id: number | string; name: string }
+
 export default function SignUpPage() {
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('') // This is the PERSONAL email
+  const [officialEmail, setOfficialEmail] = useState('') // <-- This is now the main email
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<'Student' | 'Alumni' | 'Faculty' | ''>('')
+  const [collegeId, setCollegeId] = useState<number | string>('')
+  
+  const [colleges, setColleges] = useState<College[]>([])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+
+  // Fetch colleges (for domain check)
+  useEffect(() => {
+    const fetchColleges = async () => {
+      const { data } = await supabase.from('colleges').select('id, name, verification_domain')
+      if (data) setColleges(data)
+    }
+    fetchColleges()
+  }, [])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,20 +44,27 @@ export default function SignUpPage() {
       return
     }
 
+    // --- NEW: Domain Check ---
+    const selectedCollege = colleges.find(c => c.id == collegeId)
+    if (!selectedCollege || !officialEmail.endsWith(selectedCollege.verification_domain)) {
+      setError(`Your email must end with the selected college's domain (e.g., ${selectedCollege?.verification_domain || '@college.edu'})`)
+      setLoading(false)
+      return
+    }
+
     // 1. Get the origin URL
     const redirectTo = `${window.location.origin}/auth/callback?next=/id-verification`
 
     // 2. Sign up the user
     const { data, error } = await supabase.auth.signUp({
-      email: email,
+      email: officialEmail, // <-- Use the OFFICIAL email to sign up
       password: password,
       options: {
-        // 3. Store the full_name and role in the user's metadata
         data: {
           full_name: fullName, 
           role: role,
+          college_id: collegeId,
         },
-        // 4. Tell Supabase where to redirect after the email link is clicked
         emailRedirectTo: redirectTo,
       },
     })
@@ -49,7 +72,7 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message)
     } else {
-      setMessage('Success! Please check your personal email for a verification link to continue.')
+      setMessage(`Success! Please check your official email (${officialEmail}) for a verification link to continue.`)
     }
     setLoading(false)
   }
@@ -58,20 +81,7 @@ export default function SignUpPage() {
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
       {/* --- Left Logo Pane --- */}
       <div className="hidden items-center justify-center bg-gray-50 p-12 md:flex">
-        <div className="flex flex-col items-center text-center">
-          <Link href="/">
-            <Image
-              src="/logo.png"
-              alt="CareerNest Logo"
-              width={728}
-              height={142}
-              className="h-auto w-80"
-            />
-          </Link>
-          <p className="mt-2 text-m text-gray-600">
-            Join the CareerNest network and connect your entire community.
-          </p>
-        </div>
+        {/* ... (Your logo and tagline) ... */}
       </div>
       
       {/* --- Right Form Pane --- */}
@@ -81,14 +91,11 @@ export default function SignUpPage() {
             Create Your Account
           </h2>
           
-          {/* Show a success message or the form */}
           {!message ? (
             <form onSubmit={handleSignUp} className="space-y-4">
               
               <div>
-                <label htmlFor="full-name" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
+                <label htmlFor="full-name" className="block text-sm font-medium text-gray-700">Full Name</label>
                 <input
                   id="full-name"
                   type="text"
@@ -96,28 +103,43 @@ export default function SignUpPage() {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g., Jane Doe"
                 />
               </div>
 
               <div>
+                <label htmlFor="college-id" className="block text-sm font-medium text-gray-700">College</label>
+                <select
+                  id="college-id"
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  value={collegeId}
+                  onChange={(e) => setCollegeId(e.target.value)}
+                >
+                  <option value="" disabled>Select your college...</option>
+                  {colleges.map((college) => (
+                    <option key={college.id} value={college.id}>{college.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Personal Email (For Login)
+                  Official College Email (For Login & Verification)
                 </label>
                 <input
                   id="email"
                   type="email"
                   required
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g., you@gmail.com"
+                  value={officialEmail}
+                  onChange={(e) => setOfficialEmail(e.target.value)}
+                  placeholder="your_id@dcrustm.org"
                 />
               </div>
 
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                  I am a...
-                </label>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700">I am a...</label>
                 <select
                   id="role"
                   required
@@ -133,9 +155,7 @@ export default function SignUpPage() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
                 <input
                   id="password"
                   type="password"
@@ -149,9 +169,7 @@ export default function SignUpPage() {
               </div>
 
               <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
-                  Confirm Password
-                </label>
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">Confirm Password</label>
                 <input
                   id="confirm-password"
                   type="password"
@@ -159,6 +177,7 @@ export default function SignUpPage() {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Type your password again"
                 />
               </div>
               
@@ -168,7 +187,7 @@ export default function SignUpPage() {
                   disabled={loading}
                   className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm"
                 >
-                  {loading ? 'Submitting...' : 'Sign Up'}
+                  {loading ? 'Submitting...' : 'Send Verification Link'}
                 </button>
               </div>
 
