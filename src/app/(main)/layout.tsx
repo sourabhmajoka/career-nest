@@ -1,11 +1,8 @@
 // src/app/(main)/layout.tsx
 import React from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 import { redirect } from 'next/navigation'
-import LogoutButton from '@/components/LogoutButton'
-import SidebarNav from '@/components/SidebarNav' // <-- 1. Import new component
+import Sidebar from '@/components/Sidebar' 
 
 export default async function MainLayout({
   children,
@@ -13,49 +10,37 @@ export default async function MainLayout({
   children: React.ReactNode
 }) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  
+  // 1. Get the user (Authentication)
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
+    // If no user, send to login
     redirect('/login')
   }
 
+  // 2. NEW: Get the user's profile (Authorization)
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', user.id)
+    .single()
+
+  // 3. NEW: Check the profile status
+  if (error || !profile || profile.status !== 'approved') {
+    // If they have no profile, or an error, OR their status is not 'approved'
+    // (e.g., it's 'pending_verification' or 'pending_admin_approval')
+    // force them to the verification page.
+    redirect('/id-verification')
+  }
+
+  // 4. If they ARE approved, show the app
   return (
-    <div className="flex min-h-screen">
-
-      {/* --- Sidebar --- */}
-      <nav className="hidden w-64 shrink-0 flex-col bg-white p-6 shadow-lg md:flex">
-        <div>
-          <div className="mb-6">
-            <Link href="/home">
-              <Image
-                src="/logo.png"
-                alt="CareerNest Logo"
-                width={728} // Set your logo's width
-                height={142} // Set your logo's height
-                priority // Tells Next.js to load this image first
-                className="h-8 w-auto"
-              />
-            </Link>
-          </div>
-          
-          {/* 2. Use the new component here */}
-          <SidebarNav />
-
-          <button className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-            Post a Job
-          </button>
-        </div>
-
-        {/* Logout Button at the bottom of the sidebar */}
-        <div className="mt-auto">
-          <LogoutButton />
-        </div>
-      </nav>
-
-      {/* --- Main Content Area --- */}
-      <main className="flex-1 bg-gray-100">
+    <div className="flex h-screen overflow-hidden bg-gray-100">
+      <div className="flex-shrink-0">
+        <Sidebar user={user} /> 
+      </div>
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
     </div>
