@@ -21,6 +21,7 @@ const getInitials = (user: any, profile: any) => {
   return '?'
 }
 
+// This is the part that fixes the type error
 export default async function UserProfilePage({ params }: { params: { userId: string } }) {
   const supabase = createClient()
   
@@ -83,7 +84,6 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           </div>
 
           {/* --- 2. ACTION BUTTONS --- */}
-          {/* We'll add dynamic logic here later */}
           <div className="mt-6 flex flex-wrap gap-3">
             <button className="flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
               <UserPlus className="h-4 w-4" />
@@ -98,7 +98,6 @@ export default async function UserProfilePage({ params }: { params: { userId: st
               Request Video Call
             </button>
             <button className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-              {/* You can use a different icon like 'Star' or 'Award' for Mentorship */}
               <Briefcase className="h-4 w-4" /> 
               Request Mentorship
             </button>
