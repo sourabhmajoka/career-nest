@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import MessagesUI from '@/components/MessagesUI' // We will create this next
 
 export default async function MessagesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {

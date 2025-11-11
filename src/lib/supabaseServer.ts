@@ -1,11 +1,11 @@
 // src/lib/supabaseServer.ts
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
-export const createClient = () => {
-  const cookieStore = cookies()
+export async function createClient() {
+  const cookieStore = await cookies() // 👈 important: await it now
 
-  return createServerClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -16,20 +16,20 @@ export const createClient = () => {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored.
+          } catch {
+            // ignore for static builds
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored.
+            cookieStore.delete({ name, ...options })
+          } catch {
+            // ignore for static builds
           }
         },
       },
     }
   )
+
+  return supabase
 }

@@ -1,51 +1,30 @@
 // src/app/(main)/profile/[userId]/page.tsx
 import { createClient } from '@/lib/supabaseServer'
 import { redirect, notFound } from 'next/navigation'
-import { Plus, Edit, Briefcase, Users, MessageSquare, Video, UserPlus } from 'lucide-react'
+import { Briefcase, Users, MessageSquare, Video, UserPlus } from 'lucide-react'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 
-// --- 1. THIS IS THE TYPE DEFINITION FIX ---
-// We define the exact props Next.js expects for this page
-type PageProps = {
-  params: {
-    userId: string
+export async function generateMetadata({ params }: any): Promise<Metadata> {
+  const supabase = await createClient()  // ✅ Fixed
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', params.userId)
+    .single()
+
+  return {
+    title: `${profile?.full_name || 'Profile'} | CareerNest`,
   }
 }
 
-// Helper function to get initials
-const getInitials = (user: any, profile: any) => {
-  const fullName = profile?.full_name
-  const email = user?.email
-  if (fullName) {
-    const names = fullName.split(' ')
-    if (names.length > 1) {
-      return (names[0][0] + names[names.length - 1][0]).toUpperCase()
-    }
-    return names[0][0].toUpperCase()
-  }
-  if (email) {
-    return email[0].toUpperCase()
-  }
-  return '?'
-}
-
-// --- 2. WE USE THE 'PageProps' TYPE HERE ---
-export default async function UserProfilePage({ params }: PageProps) {
-  const supabase = createClient()
-  
-  // 1. Get our *own* user
+export default async function UserProfilePage({ params }: any) {
+  const supabase = await createClient()  // ✅ Fixed
   const { data: { user: ownUser } } = await supabase.auth.getUser()
-  if (!ownUser) {
-    redirect('/login')
-  }
 
-  // 2. If we're viewing our *own* profile, redirect to the 'My Profile' page
-  if (params.userId === ownUser.id) {
-    redirect('/profile')
-  }
+  if (!ownUser) redirect('/login')
+  if (params.userId === ownUser.id) redirect('/profile')
 
-  // 3. Fetch the data for the profile we are viewing
-  // --- 3. THIS FIXES THE SYNTAX ERROR (no underscore) ---
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
@@ -56,12 +35,11 @@ export default async function UserProfilePage({ params }: PageProps) {
     .eq('id', params.userId)
     .single()
 
-  // 4. If no profile is found, show a 404 page
-  if (error || !profile) {
-    notFound()
-  }
+  if (error || !profile) notFound()
 
-  const initials = getInitials(null, profile)
+  const initials = profile.full_name
+  ? profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+  : '?'
 
   return (
     <div className="mx-auto max-w-4xl p-8">

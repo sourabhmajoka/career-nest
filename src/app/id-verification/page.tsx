@@ -138,20 +138,26 @@ const VerificationForm = ({ user, role }: { user: User, role: string }) => {
       )}
       
       {(role === 'Faculty' || role === 'Alumni') && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Upload ID Card (PDF/Image)</label>
-          <input 
-            type="file" 
-            required 
-            className="mt-1 block w-full text-sm text-gray-700 file:..." 
-            onChange={(e) => setIdProofFile(e.target.files ? e.target.files[0] : null)} 
-          />
-        </div>
-      )}
-      
-      <button type="submit" disabled={loading} className="flex w-full justify-center ...">
-        {loading ? 'Saving...' : 'Complete Profile'}
-      </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Upload ID Card (PDF/Image)</label>
+              <input 
+                type="file" 
+                required 
+                // --- FIXED CLASSNAME ---
+                className="mt-1 block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-600 hover:file:bg-indigo-100" 
+                onChange={(e) => setIdProofFile(e.target.files ? e.target.files[0] : null)} 
+              />
+            </div>
+          )}
+          
+          <button 
+            type="submit" 
+            disabled={loading} 
+            // --- FIXED CLASSNAME ---
+            className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+          >
+            {loading ? 'Saving...' : 'Complete Profile'}
+          </button>
       {error && <p className="text-center text-sm text-red-600">{error}</p>}
     </form>
   )

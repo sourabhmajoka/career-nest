@@ -1,26 +1,26 @@
 // src/app/auth/callback/route.ts
 import { createClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
-import { type NextRequest } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
-  
-  // This 'next' parameter is the one we set in the sign-up form
-  const next = searchParams.get('next') || '/home'
+  const next = searchParams.get('next') ?? '/home'
 
   if (code) {
-    const supabase = createClient()
+    // ✅ Fix: await the client
+    const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (!error) {
-      // This is the fix:
-      // Redirect to the 'next' URL (our /id-verification page)
-      return NextResponse.redirect(`${origin}${next}`)
+      // This sets the Supabase session cookie on the response
+      const response = NextResponse.redirect(new URL(next, request.url))
+      return response
     }
+
+    console.error('Error exchanging code:', error)
   }
 
-  // Fallback: redirect to an error page or home
-  return NextResponse.redirect(`${origin}/login?error=Invalid verification link.`)
+  // If no code or there’s an error
+  return NextResponse.redirect(new URL('/login?error=auth_failed', request.url))
 }

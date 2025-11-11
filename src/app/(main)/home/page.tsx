@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import NestFeed from '@/components/NestFeed' // 1. Import your new component
 
 export default async function HomePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {

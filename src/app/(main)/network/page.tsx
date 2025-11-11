@@ -26,7 +26,7 @@ async function getSuggestions(supabase: any) {
 
 
 export default async function NetworkPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // 1. Protect the route
   const { data: { user } } = await supabase.auth.getUser()

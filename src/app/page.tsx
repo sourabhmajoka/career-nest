@@ -8,7 +8,7 @@ import { ArrowRight, Briefcase, Users, MessageSquare } from 'lucide-react'
 
 export default async function LandingPage() {
   // 1. Get the server-side Supabase client
-  const supabase = createClient()
+  const supabase = await createClient() 
 
   // 2. Check if a user is already logged in
   const {

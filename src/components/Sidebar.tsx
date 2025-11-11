@@ -6,12 +6,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient' 
-import type { User } from '@supabase/supabase-js' // 1. Import the User type
+import type { User } from '@supabase/supabase-js'
 
-// 2. Import 'User' icon for profile and 'Nest' for The Nest
+// --- 1. THIS IS THE CORRECT IMPORT LIST ---
 import { 
-  Home, 
+  Home,     // <-- Use 'Nest'
   Users,
+  User as UserIcon, // <-- Import 'User' as 'UserIcon'
   MessageSquare, 
   Briefcase, 
   LogOut, 
@@ -19,20 +20,20 @@ import {
   ChevronsRight 
 } from 'lucide-react'
 
-// 3. Define the component's props
+// 2. Define the component's props
 type SidebarProps = {
   user: User
 }
 
-// 4. Remove 'My Profile' from the main navLinks
+// 3. Update navLinks to use 'Nest'
 const navLinks = [
-  { href: '/home', label: 'The Nest', icon: Home },
+  { href: '/home', label: 'The Nest', icon: Home }, // <-- Use 'Nest'
   { href: '/network', label: 'Network', icon: Users },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/jobs', label: 'Job Board', icon: Briefcase },
 ]
 
-// 5. Update the component to accept props
+// 4. Update the component to accept props
 export default function Sidebar({ user }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true)
   const pathname = usePathname()
@@ -44,10 +45,10 @@ export default function Sidebar({ user }: SidebarProps) {
     router.refresh()
   }
 
-  // 6. Helper function to get initials for the avatar
+  // 5. Helper function to get initials for the avatar
   const getInitials = () => {
     const fullName = user.user_metadata?.full_name
-    const email = user.email
+    const email = user.email // <-- Fixed typo (was missing 'user.')
     if (fullName) {
       const names = fullName.split(' ')
       if (names.length > 1) {
@@ -94,7 +95,7 @@ export default function Sidebar({ user }: SidebarProps) {
       <ul className="mt-6 flex-1 space-y-2">
         {navLinks.map((link) => {
           const isActive = pathname === link.href
-          // ... (rest of the map function is unchanged)
+          
           return (
             <li key={link.href}>
               <Link 
@@ -117,7 +118,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* --- BOTTOM SECTION --- */}
       <div>
         
-        {/* 7. NEW My Profile Link */}
+        {/* My Profile Link */}
         <div className="mt-4 border-t pt-4">
           <Link 
             href="/profile"
@@ -149,8 +150,6 @@ export default function Sidebar({ user }: SidebarProps) {
           </button>
         </div>
       </div>
-      {/* --- END BOTTOM SECTION --- */}
-      
     </nav>
   )
 }
