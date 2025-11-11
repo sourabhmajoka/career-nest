@@ -21,7 +21,6 @@ const getInitials = (user: any, profile: any) => {
   return '?'
 }
 
-// This is the part that fixes the type error
 export default async function UserProfilePage({ params }: { params: { userId: string } }) {
   const supabase = createClient()
   
@@ -37,7 +36,8 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   }
 
   // 3. Fetch the data for the profile we are viewing
-  const { data: profile, error }_ = await supabase
+  // --- THIS IS THE FIXED LINE ---
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
       *,
