@@ -4,6 +4,13 @@ import { redirect, notFound } from 'next/navigation'
 import { Plus, Edit, Briefcase, Users, MessageSquare, Video, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 
+// Define the types for this page's props
+type PageProps = {
+  params: {
+    userId: string
+  }
+}
+
 // Helper function to get initials
 const getInitials = (user: any, profile: any) => {
   const fullName = profile?.full_name
@@ -21,7 +28,8 @@ const getInitials = (user: any, profile: any) => {
   return '?'
 }
 
-export default async function UserProfilePage({ params }: { params: { userId: string } }) {
+// Use the PageProps type
+export default async function UserProfilePage({ params }: PageProps) {
   const supabase = createClient()
   
   // 1. Get our *own* user
@@ -36,7 +44,6 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   }
 
   // 3. Fetch the data for the profile we are viewing
-  // --- THIS IS THE FIXED LINE (no underscore) ---
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
