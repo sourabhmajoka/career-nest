@@ -1,4 +1,4 @@
-
+project_id = "iegubctsuavoqfpcpxga"
 [functions.student-verify-email]
 enabled = true
 verify_jwt = true
