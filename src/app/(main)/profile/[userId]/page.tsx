@@ -36,7 +36,7 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   }
 
   // 3. Fetch the data for the profile we are viewing
-  // --- THIS IS THE FIXED LINE ---
+  // --- THIS IS THE FIXED LINE (no underscore) ---
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
