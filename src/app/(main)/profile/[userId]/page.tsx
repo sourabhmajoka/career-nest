@@ -4,8 +4,9 @@ import { redirect, notFound } from 'next/navigation'
 import { Plus, Edit, Briefcase, Users, MessageSquare, Video, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 
-// Define the types for this page's props
-interface UserProfilePageProps {
+// --- 1. THIS IS THE TYPE DEFINITION FIX ---
+// We define the exact props Next.js expects for this page
+type PageProps = {
   params: {
     userId: string
   }
@@ -28,7 +29,7 @@ const getInitials = (user: any, profile: any) => {
   return '?'
 }
 
-// Use the PageProps type
+// --- 2. WE USE THE 'PageProps' TYPE HERE ---
 export default async function UserProfilePage({ params }: PageProps) {
   const supabase = createClient()
   
@@ -44,6 +45,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   }
 
   // 3. Fetch the data for the profile we are viewing
+  // --- 3. THIS FIXES THE SYNTAX ERROR (no underscore) ---
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
