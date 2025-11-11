@@ -5,7 +5,7 @@ import { Plus, Edit, Briefcase, Users, MessageSquare, Video, UserPlus } from 'lu
 import Link from 'next/link'
 
 // Define the types for this page's props
-type PageProps = {
+interface UserProfilePageProps {
   params: {
     userId: string
   }
