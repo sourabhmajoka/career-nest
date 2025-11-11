@@ -77,8 +77,11 @@ const VerificationForm = ({ user, role }: { user: User, role: string }) => {
         .update(updates)
         .eq('id', user.id)
         
-      if (profileError) throw profileError
-
+      if (profileError) {
+        console.error('Supabase update failed:', profileError.message)
+        setError(profileError.message)
+        return
+      }
       // 4. Redirect
       if (updates.status === 'approved') {
         router.push('/home')
