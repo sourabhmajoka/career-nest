@@ -59,6 +59,7 @@ const VerificationForm = ({ user, role }: { user: User, role: string }) => {
 
       // 2. Prepare data to update profile
       const updates: any = {
+        college_id: user.user_metadata?.college_id,
         department_id: departmentId,
         email_personal: personalEmail, // New column for personal email
         status: (role === 'Student') ? 'approved' : 'pending_admin_approval',
